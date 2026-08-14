@@ -2,15 +2,8 @@
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark"><title>Replenish — Buyer Replenishment Prototype</title>
-<style>*,*::before,*::after{box-sizing:border-box}html,body{margin:0;padding:0}img,svg{max-width:100%}
-button,input,select,textarea{font:inherit;color:inherit}
-#themeToggle{position:fixed;right:14px;bottom:14px;z-index:80;display:flex;align-items:center;gap:7px;
-background:var(--surface);color:var(--ink-soft);border:1px solid var(--line-strong);border-radius:999px;
-padding:8px 13px;font-size:12px;font-weight:600;cursor:pointer;
-font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-box-shadow:0 2px 4px rgba(16,22,32,.08),0 8px 20px rgba(16,22,32,.10)}
-#themeToggle:hover{color:var(--ink);border-color:var(--ink-faint)}#themeToggle svg{width:14px;height:14px}
-@media print{#themeToggle{display:none}}</style></head><body>
+<style>*,*::before,*::after{box-sizing:border-box}html,body{margin:0;padding:0}img,svg{max-width:100%}button,input,select,textarea{font:inherit;color:inherit}
+#themeToggle{position:fixed;right:14px;bottom:14px;z-index:80;display:flex;align-items:center;gap:7px;background:var(--surface);color:var(--ink-soft);border:1px solid var(--line-strong);border-radius:999px;padding:8px 13px;font-size:12px;font-weight:600;cursor:pointer;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;box-shadow:0 2px 4px rgba(16,22,32,.08),0 8px 20px rgba(16,22,32,.10)}#themeToggle:hover{color:var(--ink);border-color:var(--ink-faint)}#themeToggle svg{width:14px;height:14px}@media print{#themeToggle{display:none}}</style></head><body>
 <style>
 :root{
   --bg:#DFE4EC; --surface:#FFFFFF; --surface-2:#EFF2F6; --surface-3:#DDE2EA;
@@ -285,6 +278,30 @@ table.sup{min-width:760px}
 .actMuted{font-family:var(--mono);font-size:10px;color:var(--ink-faint)}
 table.sup tr.picked td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 
+/* ---- basket icon that expands into a quantity stepper ---- */
+th.ctr,td.ctr{text-align:center}
+.cartBtn{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-width:34px;height:28px;padding:0 9px;
+  border:1px solid var(--line-strong);border-radius:6px;background:var(--surface-2);color:var(--accent);cursor:pointer;
+  transition:background .13s,border-color .13s,color .13s,box-shadow .13s}
+.cartBtn svg{width:16px;height:16px}
+.cartBtn:hover{border-color:var(--accent);background:var(--accent-soft);box-shadow:var(--shadow-s)}
+.cartBtn.ho{color:var(--fast);font-family:var(--mono);font-size:10px;font-weight:700}
+.cartBtn.ho svg{width:14px;height:14px}
+.cartBtn.ho:hover{border-color:var(--fast);background:var(--fast-soft)}
+.stepper{display:inline-flex;align-items:center;gap:1px;border:1px solid var(--accent);border-radius:6px;background:var(--accent-soft);padding:2px}
+.stepper.ho{border-color:var(--fast);background:var(--fast-soft)}
+.stepBtn{width:24px;height:24px;border:0;background:transparent;color:var(--accent-ink);font-size:16px;font-weight:700;line-height:1;
+  cursor:pointer;border-radius:4px;display:grid;place-items:center}
+.stepper.ho .stepBtn{color:var(--fast)}
+.stepBtn:hover{background:rgba(128,128,128,.18)}
+.stepNum{width:56px;border:0;background:transparent;text-align:center;font-family:var(--mono);font-size:12px;font-weight:700;
+  color:var(--accent-ink);font-variant-numeric:tabular-nums;-moz-appearance:textfield}
+.stepper.ho .stepNum{color:var(--fast)}
+.stepNum::-webkit-outer-spin-button,.stepNum::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.stepRm{width:20px;height:24px;border:0;background:transparent;color:var(--ink-faint);cursor:pointer;border-radius:4px;
+  font-size:11px;display:grid;place-items:center}
+.stepRm:hover{color:var(--out);background:var(--out-soft)}
+
 /* order-qty pushed to the right of the stats bar */
 .bodyBar .qty{margin-left:auto}
 
@@ -486,6 +503,15 @@ tr.win .netv{color:var(--accent-ink)}
       <nav class="secs" id="secNav"></nav>
     </div>
 
+    <div class="sideFoot">
+      <button class="basketBtn" id="openBasket">
+        <div>
+          <div class="bt">Basket</div>
+          <div class="bs" id="basketSub">Nothing selected</div>
+        </div>
+        <span class="pillN zero" id="basketCount">0</span>
+      </button>
+    </div>
   </aside>
 
   <!-- ================= MAIN ================= -->
@@ -512,6 +538,58 @@ tr.win .netv{color:var(--accent-ink)}
       <div id="list"></div>
     </div>
   </div>
+</div>
+
+<div class="scrim" id="scrim"></div>
+
+<!-- ================= BASKET DRAWER ================= -->
+<aside class="drawer" id="drawer" aria-label="Basket">
+  <div class="dHead">
+    <div>
+      <h2>Basket</h2>
+      <p id="drawerSub">Ready to send</p>
+    </div>
+    <button class="xBtn" id="closeDrawer" aria-label="Close basket">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <div class="dBody" id="basketBody"></div>
+  <div class="dFoot">
+    <div class="totRow"><span>Purchase orders total</span><b id="poVal">£0.00</b></div>
+    <button class="btn p" id="sendPO" style="justify-content:center">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      Send POs to PO System
+    </button>
+    <button class="btn s" id="sendMail" style="justify-content:center">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
+      Email hand-offs to buyers
+    </button>
+  </div>
+</aside>
+
+<!-- ================= MODAL ================= -->
+<div class="modal" id="modal">
+  <div class="mCard">
+    <div class="mHead">
+      <div>
+        <h2 id="mTitle">Purchase Order preview</h2>
+        <p id="mSub">BNS-PurchaseOrder</p>
+      </div>
+      <button class="xBtn" id="closeModal" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="mBody" id="mBody"></div>
+    <div class="mFoot">
+      <button class="btn g" id="mCancel">Close</button>
+      <button class="btn p" id="mConfirm">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+  <span id="toastMsg"></span>
 </div>
 
 <script>
@@ -727,7 +805,24 @@ function recommend(p){
          label:`Cheaper on ${owner}'s account (${short(bestAll.name)})`,qty:suggest(p),why,conf:confidence(p),tone:"warn"};
 }
 
-const state={filter:"all",section:"low",q:"",open:null};
+/* dest: code -> {type:'po'|'handoff', supplier, qty}.  A product has ONE destination. */
+const state={filter:"all",section:"low",q:"",open:null,dest:new Map()};
+const poEntries      = () => [...state.dest].filter(([,d])=>d.type==="po");
+const handoffEntries = () => [...state.dest].filter(([,d])=>d.type==="handoff");
+const STEP=100;
+
+/* ---------- pre-send validation (PO baskets only) ---------- */
+function validate(){
+  const out=[];
+  poEntries().forEach(([c,d])=>{
+    const p=DATA.find(x=>x.code===c), sp=p.sup.find(x=>x.name===d.supplier);
+    if(!d.qty||d.qty<=0)      out.push({bad:1,t:`${p.name} — order quantity is zero`});
+    if(!isMine(d.supplier))   out.push({bad:1,t:`${p.name} — ${d.supplier} is not one of your suppliers`});
+    if(sp&&sp.oos)            out.push({bad:1,t:`${p.name} — ${d.supplier} is out of stock`});
+    if(sp&&isStale(sp))       out.push({bad:0,t:`${p.name} — ${d.supplier} price is ${ageDays(sp.date)} days old`});
+  });
+  return out;
+}
 
 /* products in scope: carried by ANY of my assigned suppliers (product-based),
    narrowed to one supplier when the secondary filter is set */
@@ -807,6 +902,7 @@ function renderList(){
   }
   el.innerHTML=rows.map(p=>{
     const best=bestOf(p.sup);
+    const d=state.dest.get(p.code);
     const cover=Math.min(100,(p.daysCover/30)*100);
     const chip=id=>id==="out"?`<span class="badge out">Out of stock</span>`
       :id==="fast"?`<span class="badge fast">${ratio(p).toFixed(1)}× expected</span>`
@@ -868,12 +964,31 @@ function renderList(){
         <div class="tblWrap"><table class="sup">
           <thead><tr>
             <th>Supplier</th><th class="r">Price</th><th class="r">Rebate</th><th class="r">Net price</th>
-            <th>Availability</th><th>Owner</th><th class="r">Updated</th>
+            <th>Availability</th><th>Owner</th><th class="r">Updated</th><th class="ctr">Order</th>
           </tr></thead>
           <tbody>${p.sup.slice().sort((a,b)=>net(a)-net(b)).map(x=>{
-            const mineRow=isMine(x.name);
+            const mineRow=isMine(x.name), sel=d&&d.supplier===x.name;
+            let act;
+            if(sel){
+              act=`<div class="stepper ${d.type==="handoff"?"ho":""}">
+                <button class="stepBtn" data-step="${p.code}" data-dir="-1" aria-label="decrease quantity">−</button>
+                <input class="stepNum" type="number" min="0" step="${STEP}" value="${d.qty}" data-qval="${p.code}" aria-label="quantity">
+                <button class="stepBtn" data-step="${p.code}" data-dir="1" aria-label="increase quantity">+</button>
+                <button class="stepRm" data-rmrow="${p.code}" aria-label="remove from basket">✕</button>
+              </div>`;
+            }else if(mineRow){
+              act = x.oos
+                ? `<span class="actMuted">out of stock</span>`
+                : `<button class="cartBtn" data-add="${p.code}" data-sup="${esc(x.name)}" data-type="po" title="Add to basket — order from ${short(x.name)}">
+                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2 3h3l2.2 11a1.6 1.6 0 0 0 1.6 1.3h8.4a1.6 1.6 0 0 0 1.6-1.3L21 7H6"/><path d="M15 5.5v4M13 7.5h4"/></svg>
+                   </button>`;
+            }else{
+              act = `<button class="cartBtn ho" data-add="${p.code}" data-sup="${esc(x.name)}" data-type="handoff" title="Hand off to ${x.owner}">
+                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>${x.init}
+                     </button>`;
+            }
             return `
-            <tr class="${best&&x.name===best.name?"win":""} ${x.oos?"oos":""}">
+            <tr class="${best&&x.name===best.name?"win":""} ${x.oos?"oos":""} ${sel?"picked":""}">
               <td><span class="sName">${x.name}
                 ${x.note?`<span class="tagMine">${x.note}</span>`:""}
                 ${best&&x.name===best.name?`<span class="tagBest">Best net</span>`:""}
@@ -886,30 +1001,178 @@ function renderList(){
               <td><span class="init" title="${x.owner}">${x.init}</span></td>
               <td class="r mono" style="font-size:11px;color:var(--ink-faint)">${x.date}
                 ${isStale(x)?`<span class="tagStale" title="Quoted ${ageDays(x.date)} days ago — may be out of date">${ageDays(x.date)}d old</span>`:""}</td>
+              <td class="ctr actCell">${act}</td>
             </tr>`;}).join("")}
           </tbody>
         </table></div>
         <div class="rebFoot">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg>
-          Net price = price after rebate, from the supplier rebate file. The cheapest in-stock supplier is tagged <b>Best net</b>.
+          Net price = price after rebate. Tap the <b>basket</b> on any of your suppliers to add it — then set the quantity with − / +. The envelope hands a line to another buyer.
         </div>
       </div></div></div>
     </article>`;
   }).join("");
 }
 
-const renderAll=()=>{renderNav();renderList();};
+/* ---------- render: basket ---------- */
+function basketItem(c,d){
+  const p=DATA.find(x=>x.code===c), sp=p.sup.find(x=>x.name===d.supplier);
+  return `<div class="bItem">
+    <div class="bi"><div class="bn2">${p.name}</div>
+      <div class="bm">${p.code} · ${d.supplier}${sp?` · ${money(net(sp),3)} net`:""}</div></div>
+    <div class="bq">${nfmt(d.qty)}<small>packs</small></div>
+    <button class="rm" data-rm="${c}" aria-label="Remove ${p.name}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button></div>`;
+}
+function renderBaskets(){
+  const po=poEntries(), ho=handoffEntries(), n=po.length+ho.length;
+  const cnt=document.getElementById("basketCount");
+  cnt.textContent=n; cnt.classList.toggle("zero",n===0);
+  document.getElementById("basketSub").textContent =
+    n?`${po.length} to order · ${ho.length} to hand off`:"Nothing selected";
+
+  let html="";
+  const poGroups={}; po.forEach(([c,d])=>{(poGroups[d.supplier]=poGroups[d.supplier]||[]).push([c,d]);});
+  Object.entries(poGroups).forEach(([sup,items])=>{
+    html+=`<section class="bSec">
+      <h3><span class="stripe" style="background:var(--accent)"></span>${sup} — Purchase Order</h3>
+      <p class="bd">Goes into the PO System pre-filled. No re-keying.</p>
+      ${items.map(([c,d])=>basketItem(c,d)).join("")}</section>`;
+  });
+  if(ho.length){
+    const hg={}; ho.forEach(([c,d])=>{const o=OWNER[d.supplier];(hg[o]=hg[o]||[]).push([c,d]);});
+    html+=`<section class="bSec">
+      <h3><span class="stripe" style="background:var(--fast)"></span>Hand off to other buyers</h3>
+      <p class="bd">Emailed so each owner orders from their own account.</p>
+      ${Object.entries(hg).map(([owner,items])=>
+        `<div class="hoOwner"><span class="init">${INIT[owner]}</span>${owner}</div>`+
+        items.map(([c,d])=>basketItem(c,d)).join("")).join("")}</section>`;
+  }
+  document.getElementById("basketBody").innerHTML=html||
+    `<div class="bEmpty" style="margin:22px 20px">Basket is empty.<br>Open a product and tap the basket on a supplier.</div>`;
+
+  let val=0;
+  po.forEach(([c,d])=>{const p=DATA.find(x=>x.code===c),sp=p.sup.find(x=>x.name===d.supplier);if(sp)val+=net(sp)*d.qty;});
+  document.getElementById("poVal").textContent=money(val);
+  document.getElementById("sendPO").disabled=!po.length;
+  document.getElementById("sendMail").disabled=!ho.length;
+}
+const renderAll=()=>{renderNav();renderList();renderBaskets();};
+
+/* ---------- toast ---------- */
+let tT;
+function toast(msg){
+  const t=document.getElementById("toast");
+  document.getElementById("toastMsg").textContent=msg;
+  t.classList.add("on"); clearTimeout(tT); tT=setTimeout(()=>t.classList.remove("on"),2600);
+}
+
+/* ---------- drawer + modal ---------- */
+const drawer=document.getElementById("drawer"), scrim=document.getElementById("scrim"), modal=document.getElementById("modal");
+const openDrawer=()=>{drawer.classList.add("on");scrim.classList.add("on");};
+const closeDrawer=()=>{drawer.classList.remove("on");if(!modal.classList.contains("on"))scrim.classList.remove("on");};
+const closeModal=()=>{modal.classList.remove("on");if(!drawer.classList.contains("on"))scrim.classList.remove("on");};
+document.getElementById("openBasket").onclick=openDrawer;
+document.getElementById("closeDrawer").onclick=closeDrawer;
+document.getElementById("closeModal").onclick=closeModal;
+document.getElementById("mCancel").onclick=closeModal;
+scrim.onclick=()=>{closeModal();closeDrawer();};
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeModal();closeDrawer();}});
+
+/* ---------- send actions ---------- */
+document.getElementById("sendPO").onclick=()=>{
+  const po=poEntries(); if(!po.length) return;
+  const groups={}; po.forEach(([c,d])=>{(groups[d.supplier]=groups[d.supplier]||[]).push([c,d]);});
+  const nPO=Object.keys(groups).length;
+  const issues=validate(), blockers=issues.filter(i=>i.bad);
+  const checks=issues.length
+    ? `<div class="checkBox ${blockers.length?"bad":"warn"}">
+         <div class="ckHead">${blockers.length?`${blockers.length} issue${blockers.length>1?"s":""} to fix before sending`:"Checks passed with warnings"}</div>
+         <ul>${issues.map(i=>`<li class="${i.bad?"bad":"warn"}">${i.t}</li>`).join("")}</ul>
+       </div>`
+    : `<div class="checkBox ok"><div class="ckHead">All checks passed</div>
+         <p>No zero quantities, unavailable suppliers or non-assigned accounts.</p></div>`;
+  const poBlocks=Object.entries(groups).map(([sup,items])=>`
+    <div class="mailGrp">
+      <div class="gh"><span class="init">${INIT[BUYER]}</span>${sup} — Purchase Order<span class="who">${items.length} line${items.length>1?"s":""}</span></div>
+      <div style="overflow-x:auto"><table class="poTbl">
+        <thead><tr><th>Site</th><th>Part No.</th><th>Description</th><th>Qty</th><th>Price</th><th>Value</th></tr></thead>
+        <tbody>${items.map(([c,d])=>{const p=DATA.find(x=>x.code===c),sp=p.sup.find(x=>x.name===sup);
+          return `<tr><td class="m">LA</td><td class="m">${p.code}</td><td>${p.name}</td>
+            <td class="m">${nfmt(d.qty)}</td><td class="m">${money(sp?sp.price:0)}</td>
+            <td class="m">${money((sp?sp.price:0)*d.qty)}</td></tr>`;}).join("")}</tbody>
+      </table></div>
+    </div>`).join("");
+  document.getElementById("mTitle").textContent=nPO>1?`${nPO} Purchase Orders preview`:"Purchase Order preview";
+  document.getElementById("mSub").textContent=`BNS-PurchaseOrder · one PO per supplier`;
+  document.getElementById("mBody").innerHTML=checks+
+    `<p style="margin:0 0 13px;font-size:13px;color:var(--ink-soft)">Each supplier becomes its own PO, pre-filled — nothing to re-type.</p>`+poBlocks;
+  const cf=document.getElementById("mConfirm");
+  cf.textContent=blockers.length?"Fix issues to continue":(nPO>1?"Send all POs":"Send to PO System");
+  cf.disabled=blockers.length>0;
+  cf.onclick=()=>{
+    const k=po.length; po.forEach(([c])=>state.dest.delete(c)); renderAll(); closeModal();
+    toast(`${k} line${k>1?"s":""} sent across ${nPO} PO${nPO>1?"s":""}`);
+  };
+  modal.classList.add("on"); scrim.classList.add("on");
+};
+document.getElementById("sendMail").onclick=()=>{
+  const ho=handoffEntries(); if(!ho.length) return;
+  const groups={};
+  ho.forEach(([c,d])=>{const o=OWNER[d.supplier];(groups[o]=groups[o]||[]).push([c,d]);});
+  document.getElementById("mTitle").textContent="Email hand-offs to buyers";
+  document.getElementById("mSub").textContent="commercial@ · grouped by account owner";
+  document.getElementById("mBody").innerHTML=
+    `<p style="margin:0 0 13px;font-size:13px;color:var(--ink-soft)">Each buyer sees only the lines on their own accounts.</p>`+
+    Object.entries(groups).map(([owner,items])=>`
+      <div class="mailGrp">
+        <div class="gh"><span class="init">${INIT[owner]||"?"}</span>${owner}
+          <span class="who">${items.length} line${items.length>1?"s":""}</span></div>
+        <ul>${items.map(([c,d])=>{const p=DATA.find(x=>x.code===c),sp=p.sup.find(x=>x.name===d.supplier);
+          return `<li>${p.name} <span style="color:var(--ink-faint)">· ${d.supplier}</span> <span class="q">${nfmt(d.qty)} @ ${money(net(sp),3)}</span></li>`;}).join("")}</ul>
+      </div>`).join("");
+  const cf=document.getElementById("mConfirm");
+  cf.textContent="Send email"; cf.disabled=false;
+  cf.onclick=()=>{
+    const k=ho.length; ho.forEach(([c])=>state.dest.delete(c)); renderAll(); closeModal();
+    toast(`${k} line${k>1?"s":""} emailed to the buyers' group`);
+  };
+  modal.classList.add("on"); scrim.classList.add("on");
+};
 
 /* ---------- events ---------- */
 document.addEventListener("click",e=>{
   const sec=e.target.closest("[data-sec]");
   if(sec){state.section=sec.dataset.sec;state.open=null;renderAll();return;}
+  const add=e.target.closest("[data-add]");
+  if(add){
+    const c=add.dataset.add, sup=add.dataset.sup, type=add.dataset.type, p=DATA.find(x=>x.code===c);
+    state.dest.set(c,{type,supplier:sup,qty:suggest(p)});
+    toast(type==="po"?`Added to basket — ${short(sup)}`:`Handed off to ${OWNER[sup]}`);
+    renderList();renderBaskets();return;
+  }
+  const step=e.target.closest("[data-step]");
+  if(step){
+    const d=state.dest.get(step.dataset.step);
+    if(d){ d.qty=Math.max(0,(d.qty||0)+(+step.dataset.dir)*STEP); renderList();renderBaskets(); }
+    return;
+  }
+  const rmrow=e.target.closest("[data-rmrow]");
+  if(rmrow){ state.dest.delete(rmrow.dataset.rmrow); toast("Removed from basket"); renderList();renderBaskets(); return; }
+  const rm=e.target.closest("[data-rm]");
+  if(rm){ state.dest.delete(rm.dataset.rm); renderAll(); return; }
   const head=e.target.closest(".rHead");
   if(head){
     const code=head.closest(".row").dataset.code;
     state.open=state.open===code?null:code;
     renderList();return;
   }
+});
+/* typing directly in the stepper number updates the basket without a full re-render */
+document.addEventListener("input",e=>{
+  const qi=e.target.closest("[data-qval]");
+  if(qi){ const d=state.dest.get(qi.dataset.qval); if(d){ d.qty=+qi.value||0; renderBaskets(); } }
 });
 document.getElementById("supSel").innerHTML=
   `<option value="all"${state.filter==="all"?" selected":""}>All my suppliers</option>`+
@@ -921,12 +1184,5 @@ renderAll();
 </script>
 
 <button id="themeToggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/></svg><span id="themeLabel">Dark</span></button>
-<script>(function(){var root=document.documentElement,lbl=document.getElementById('themeLabel');
-var mq=window.matchMedia('(prefers-color-scheme: dark)');
-function cur(){return root.dataset.theme||(mq.matches?'dark':'light');}
-function paint(){lbl.textContent=cur()==='dark'?'Light':'Dark';}
-var sv=null;try{sv=localStorage.getItem('replenish-theme');}catch(e){}if(sv)root.dataset.theme=sv;paint();
-document.getElementById('themeToggle').addEventListener('click',function(){
-var n=cur()==='dark'?'light':'dark';root.dataset.theme=n;
-try{localStorage.setItem('replenish-theme',n);}catch(e){}paint();});})();</script>
+<script>(function(){var root=document.documentElement,lbl=document.getElementById("themeLabel");var mq=window.matchMedia("(prefers-color-scheme: dark)");function cur(){return root.dataset.theme||(mq.matches?"dark":"light");}function paint(){lbl.textContent=cur()==="dark"?"Light":"Dark";}var sv=null;try{sv=localStorage.getItem("replenish-theme");}catch(e){}if(sv)root.dataset.theme=sv;paint();document.getElementById("themeToggle").addEventListener("click",function(){var n=cur()==="dark"?"light":"dark";root.dataset.theme=n;try{localStorage.setItem("replenish-theme",n);}catch(e){}paint();});})();</script>
 </body></html>
