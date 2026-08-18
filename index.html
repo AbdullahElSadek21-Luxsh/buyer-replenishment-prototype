@@ -441,6 +441,23 @@ tr.win .netv{color:var(--accent);text-shadow:0 0 18px var(--accent-glow)}
 .emTotal b{font-family:var(--mono);color:var(--accent);font-size:15px;font-variant-numeric:tabular-nums;margin-left:8px}
 .poTbl td .pc{font-family:var(--mono);font-size:10px;color:var(--ink-faint);margin-top:2px}
 
+/* ---- quick-select checkbox + select-all ---- */
+.nameCell{display:flex;align-items:center;gap:12px;min-width:0}
+.pick{flex:none;width:20px;height:20px;border-radius:6px;border:1.5px solid var(--line-strong);background:var(--surface-3);
+  display:grid;place-items:center;cursor:pointer;color:transparent;transition:background .13s,border-color .13s}
+.pick svg{width:12px;height:12px}
+.pick:hover{border-color:var(--accent)}
+.pick.on{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.pick[data-nopick]{opacity:.35;cursor:not-allowed}
+.selall{align-self:center;display:inline-flex;align-items:center;gap:8px;background:none;border:1px solid var(--line-strong);
+  border-radius:8px;padding:6px 11px;cursor:pointer;color:var(--ink-soft);font-size:12px;font-weight:600;
+  transition:border-color .13s,color .13s}
+.selall:hover{border-color:var(--accent);color:var(--ink)}
+.selall .pick{width:16px;height:16px;pointer-events:none}
+.selall.on,.selall.on:hover{border-color:var(--accent);color:var(--ink)}
+.selall.on .pick{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.bown{color:var(--ink-faint);font-weight:500;font-family:var(--mono);font-size:11px;margin-left:6px}
+
 /* ============ RESPONSIVE ============ */
 @media (max-width:1120px){
   .rHead{grid-template-columns:minmax(170px,2fr) 80px minmax(140px,1.2fr) minmax(140px,1.1fr) 28px}
@@ -559,7 +576,11 @@ tr.win .netv{color:var(--accent);text-shadow:0 0 18px var(--accent-glow)}
     <section class="listwrap">
       <div class="listhead">
         <h2 id="listTitle">Under 14 days</h2>
-        <span class="hint">Click any line to compare suppliers</span>
+        <span class="hint">Tick the lines you need</span>
+        <button class="selall" id="selAll" aria-pressed="false">
+          <span class="pick" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg></span>
+          <span id="selAllTxt">Select all</span>
+        </button>
       </div>
       <div id="list"></div>
     </section>
@@ -937,9 +958,14 @@ function renderList(){
     const rec=recommend(p);
     return `<article class="row ${primary(p)} ${state.open===p.code?"open":""}" data-code="${p.code}">
       <button class="rHead" aria-expanded="${state.open===p.code}">
-        <div>
-          <div class="pName">${p.name}</div>
-          <div class="pCode">${p.code}<span class="cat">${p.cat}</span></div>
+        <div class="nameCell">
+          <span class="pick ${d?"on":""}" data-pick="${p.code}"${best?"":" data-nopick=\"1\""} role="checkbox" aria-checked="${d?"true":"false"}" aria-label="Select ${p.name}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg>
+          </span>
+          <div>
+            <div class="pName">${p.name}</div>
+            <div class="pCode">${p.code}<span class="cat">${p.cat}</span></div>
+          </div>
         </div>
         <div>
           <div class="cLab">Stock</div>
@@ -1042,6 +1068,11 @@ function renderList(){
       </div></div></div>
     </article>`;
   }).join("");
+  const pickable=rows.filter(p=>bestOf(p.sup));
+  const allSel=pickable.length>0 && pickable.every(p=>state.dest.has(p.code));
+  const sa=document.getElementById("selAll");
+  if(sa){ sa.classList.toggle("on",allSel); sa.setAttribute("aria-pressed",allSel?"true":"false");
+    document.getElementById("selAllTxt").textContent=allSel?"Clear all":"Select all"; }
 }
 
 /* ---------- render: basket ---------- */
@@ -1062,12 +1093,13 @@ function renderBaskets(){
   document.getElementById("basketSub").textContent =
     n?`${n} line${n>1?"s":""} to email`:"Nothing selected";
 
-  // every basket line is grouped by the buyer who owns that supplier account
-  const groups={}; all.forEach(([c,d])=>{const o=OWNER[d.supplier];(groups[o]=groups[o]||[]).push([c,d]);});
+  // every basket line is grouped by SUPPLIER (one clean block per supplier)
+  const groups={}; all.forEach(([c,d])=>{(groups[d.supplier]=groups[d.supplier]||[]).push([c,d]);});
   let html="";
-  Object.entries(groups).forEach(([owner,items])=>{
+  Object.entries(groups).forEach(([sup,items])=>{
+    const owner=OWNER[sup];
     html+=`<section class="bSec">
-      <div class="hoOwner"><span class="init">${INIT[owner]}</span>${owner}${owner===BUYER?" (you)":""}</div>
+      <div class="hoOwner"><span class="init">${INIT[owner]}</span>${sup}<span class="bown">· ${owner}${owner===BUYER?" (you)":""}</span></div>
       ${items.map(([c,d])=>basketItem(c,d)).join("")}</section>`;
   });
   document.getElementById("basketBody").innerHTML=html||
@@ -1108,7 +1140,7 @@ document.getElementById("sendMail").onclick=()=>{
     if(!d.qty||d.qty<=0) warns.push(`${p.name} — quantity is zero`);
     if(sp&&isStale(sp))  warns.push(`${p.name} — ${d.supplier} price is ${ageDays(sp.date)} days old`);
   });
-  const groups={}; all.forEach(([c,d])=>{const o=OWNER[d.supplier];(groups[o]=groups[o]||[]).push([c,d]);});
+  const groups={}; all.forEach(([c,d])=>{(groups[d.supplier]=groups[d.supplier]||[]).push([c,d]);});
   let total=0; all.forEach(([c,d])=>{const p=DATA.find(x=>x.code===c),sp=p.sup.find(x=>x.name===d.supplier);if(sp)total+=net(sp)*d.qty;});
   const dateStr=TODAY.toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"});
 
@@ -1116,20 +1148,20 @@ document.getElementById("sendMail").onclick=()=>{
     ? `<div class="checkBox warn"><div class="ckHead">${warns.length} thing${warns.length>1?"s":""} to double-check</div>
          <ul>${warns.map(t=>`<li class="warn">${t}</li>`).join("")}</ul></div>` : "";
 
-  const groupBlocks=Object.entries(groups).map(([owner,items])=>{
-    let sub=0; items.forEach(([c,d])=>{const p=DATA.find(x=>x.code===c),sp=p.sup.find(x=>x.name===d.supplier);if(sp)sub+=net(sp)*d.qty;});
+  const groupBlocks=Object.entries(groups).map(([sup,items])=>{
+    const owner=OWNER[sup];
+    let sub=0; items.forEach(([c,d])=>{const p=DATA.find(x=>x.code===c),sp=p.sup.find(x=>x.name===sup);if(sp)sub+=net(sp)*d.qty;});
     return `<div class="mailGrp">
-      <div class="gh"><span class="init">${INIT[owner]}</span>${owner}${owner===BUYER?" (you)":""}<span class="who">${items.length} line${items.length>1?"s":""} · ${money(sub)}</span></div>
+      <div class="gh"><span class="init">${INIT[owner]}</span>${sup}<span class="who">${owner}${owner===BUYER?" (you)":""} · ${items.length} line${items.length>1?"s":""} · ${money(sub)}</span></div>
       <div style="overflow-x:auto"><table class="poTbl">
-        <thead><tr><th>Product</th><th>Supplier</th><th>Qty</th><th>Net</th><th>Value</th></tr></thead>
-        <tbody>${items.map(([c,d])=>{const p=DATA.find(x=>x.code===c),sp=p.sup.find(x=>x.name===d.supplier);
-          return `<tr><td>${p.name}<div class="pc">${p.code}</div></td><td>${d.supplier}</td>
-            <td class="m">${nfmt(d.qty)}</td><td class="m">${money(net(sp),3)}</td><td class="m">${money(net(sp)*d.qty)}</td></tr>`;}).join("")}</tbody>
+        <thead><tr><th>Product</th><th>Code</th><th>Qty</th><th>Net</th><th>Value</th></tr></thead>
+        <tbody>${items.map(([c,d])=>{const p=DATA.find(x=>x.code===c),sp=p.sup.find(x=>x.name===sup);
+          return `<tr><td>${p.name}</td><td class="m">${p.code}</td><td class="m">${nfmt(d.qty)}</td><td class="m">${money(net(sp),3)}</td><td class="m">${money(net(sp)*d.qty)}</td></tr>`;}).join("")}</tbody>
       </table></div>
     </div>`;}).join("");
 
-  document.getElementById("mTitle").textContent="Email to buyers";
-  document.getElementById("mSub").textContent="A clear template — ready to send";
+  document.getElementById("mTitle").textContent="Email to the buyers' shared inbox";
+  document.getElementById("mSub").textContent="Split by supplier — ready to send";
   document.getElementById("mBody").innerHTML = warnBox + `
     <div class="emailTpl">
       <div class="emHead">
@@ -1138,7 +1170,7 @@ document.getElementById("sendMail").onclick=()=>{
         <div class="emRow"><span class="emK">From</span><span class="emV">${BUYER} · Generics desk</span></div>
       </div>
       <p class="emP">Hi team,</p>
-      <p class="emP">Please raise POs for the lines below on your accounts — grouped by whose supplier they sit on. All prices are net of rebate.</p>
+      <p class="emP">Below are the lines to order, <b>one block per supplier</b>. Please jump to your supplier(s) and raise the PO for those lines. All prices are net of rebate.</p>
       ${groupBlocks}
       <p class="emTotal">Total across all lines <b>${money(total)}</b></p>
       <p class="emP">Thanks,<br>${BUYER}</p>
@@ -1156,6 +1188,14 @@ document.getElementById("sendMail").onclick=()=>{
 document.addEventListener("click",e=>{
   const sec=e.target.closest("[data-sec]");
   if(sec){state.section=sec.dataset.sec;state.open=null;renderAll();return;}
+  const pick=e.target.closest("[data-pick]");
+  if(pick){
+    const c=pick.dataset.pick, p=DATA.find(x=>x.code===c);
+    if(state.dest.has(c)){ state.dest.delete(c); toast("Removed from basket"); }
+    else if(pick.hasAttribute("data-nopick")){ toast("No supplier in stock for this line"); return; }
+    else{ const b=bestOf(p.sup); state.dest.set(c,{type:isMine(b.name)?"po":"handoff",supplier:b.name,qty:suggest(p)}); toast(`Added — best price from ${short(b.name)}`); }
+    renderList();renderBaskets();return;
+  }
   const add=e.target.closest("[data-add]");
   if(add){
     const c=add.dataset.add, sup=add.dataset.sup, type=add.dataset.type, p=DATA.find(x=>x.code===c);
@@ -1190,6 +1230,14 @@ document.getElementById("supSel").innerHTML=
   [...ASSIGNED].map(x=>`<option value="${esc(x)}"${x===state.filter?" selected":""}>${x}</option>`).join("");
 document.getElementById("supSel").onchange=e=>{state.filter=e.target.value;state.open=null;renderAll();};
 document.getElementById("q").oninput=e=>{state.q=e.target.value;renderList();};
+document.getElementById("selAll").onclick=()=>{
+  const pickable=visible().filter(p=>bestOf(p.sup));
+  const allSel=pickable.length>0 && pickable.every(p=>state.dest.has(p.code));
+  if(allSel){ pickable.forEach(p=>state.dest.delete(p.code)); toast("Selection cleared"); }
+  else{ pickable.forEach(p=>{ if(!state.dest.has(p.code)){ const b=bestOf(p.sup); state.dest.set(p.code,{type:isMine(b.name)?"po":"handoff",supplier:b.name,qty:suggest(p)}); } });
+    toast(`Selected ${pickable.length} line${pickable.length>1?"s":""}`); }
+  renderAll();
+};
 
 renderAll();
 </script>
