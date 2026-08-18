@@ -641,7 +641,8 @@ tr.win .netv{color:var(--accent);text-shadow:0 0 18px var(--accent-glow)}
 const REBATE = {
   "Alloga UK Limited":8,"Genesis Pharmaceuticals":13,"Crescent Pharma":9,"Bristol Laboratories":6,
   "Teva UK Limited":6,"Medley Pharma":5,"Mawdsley-Brooks":4,"Milpharm Ltd":6,"Accord-UK Limited":10,
-  "Brown & Burk UK":5,"Medreich PLC":7
+  "Brown & Burk UK":5,"Medreich PLC":7,
+  "Aurobindo Pharma":11,"Zentiva":12,"Sandoz":9,"Wockhardt UK":8,"Morningside":10,"Ennogen Pharma":6
 };
 /* the logged-in buyer, and which supplier accounts each buyer owns
    (from the "Modified By" initials in Buying History) */
@@ -650,7 +651,9 @@ const OWNER = {
   "Crescent Pharma":"Omkar","Genesis Pharmaceuticals":"Omkar","Alloga UK Limited":"Omkar",
   "Bristol Laboratories":"Omkar","Teva UK Limited":"Omkar",
   "Accord-UK Limited":"Rob","Medley Pharma":"Denalka","Mawdsley-Brooks":"Matt",
-  "Milpharm Ltd":"Zain","Brown & Burk UK":"Matt","Medreich PLC":"Matt"
+  "Milpharm Ltd":"Zain","Brown & Burk UK":"Matt","Medreich PLC":"Matt",
+  "Aurobindo Pharma":"Rob","Zentiva":"Matt","Sandoz":"Denalka","Wockhardt UK":"Zain",
+  "Morningside":"Matt","Ennogen Pharma":"Rob"
 };
 const INIT = {Rob:"RO",Matt:"MA",Omkar:"OM",Denalka:"DE",Zain:"ZA"};
 /* a buyer's assigned suppliers = the accounts they own (illustrative for the demo) */
@@ -760,7 +763,209 @@ const DATA = [
   stock:9100,newcastle:0,onOrder:0,daysCover:7,avgDaily:1300,
   m:[8200,7900,8600,8100,9200,8700,8400,7900,9100,8600,8200,9400,24800],
   sup:[s("Accord-UK Limited",1.28,9000,"26-06-2026"),s("Crescent Pharma",1.35,6000,"13-07-2026"),
-       s("Bristol Laboratories",1.40,4000,"06-05-2026")]}
+       s("Bristol Laboratories",1.40,4000,"06-05-2026")]},
+
+ /* ---- 25 additional community-pharmacy lines; best-net ownership is mixed
+    (for most lines the cheapest net belongs to another buyer's account) ---- */
+ {code:"A118",name:"Amoxicillin 500mg Capsules 21",cat:"Generics",sec:"out",
+  stock:0,newcastle:0,onOrder:0,daysCover:0,avgDaily:1800,
+  m:[59100,47300,57500,62900,66300,66200,55700,53200,52200,53400,48600,54800,27460],
+  sup:[
+       s("Accord-UK Limited",0.86,20000,"05-07-2026"),s("Aurobindo Pharma",0.99,14000,"18-06-2026"),
+       s("Genesis Pharmaceuticals",0.95,9000,"24-06-2026"),s("Bristol Laboratories",0.92,6000,"06-05-2026"),
+       s("Teva UK Limited",0.90,12000,"08-07-2026"),s("Crescent Pharma",1.05,0,"13-07-2026",true)]},
+
+ {code:"C275",name:"Clopidogrel 75mg Tablets 28",cat:"Generics",sec:"out",
+  stock:0,newcastle:0,onOrder:0,daysCover:0,avgDaily:1400,
+  m:[43500,40900,45100,44000,49900,45800,49800,45100,40500,37900,41100,39800,28442],
+  sup:[
+       s("Aurobindo Pharma",1.15,9000,"02-07-2026"),s("Genesis Pharmaceuticals",1.18,7000,"24-06-2026"),
+       s("Zentiva",1.20,11000,"15-07-2026"),s("Teva UK Limited",1.22,8000,"08-07-2026"),
+       s("Accord-UK Limited",1.30,5000,"26-06-2026")]},
+
+ {code:"S430",name:"Salbutamol 100mcg Inhaler",cat:"Generics",sec:"out",
+  stock:0,newcastle:0,onOrder:0,daysCover:0,avgDaily:900,
+  m:[29700,27500,28100,28100,30600,29300,31100,29500,27400,27000,27000,27700,21835],
+  sup:[
+       s("Zentiva",1.55,9000,"10-07-2026"),s("Aurobindo Pharma",1.60,6000,"18-06-2026"),
+       s("Alloga UK Limited",1.58,7000,"25-06-2026",false,"Ipca"),s("Teva UK Limited",1.62,10000,"08-07-2026"),
+       s("Accord-UK Limited",1.70,4000,"26-06-2026"),s("Crescent Pharma",1.75,0,"12-03-2026",true)]},
+
+ {code:"K960",name:"Co-codamol 30/500mg Tablets 100",cat:"Ethical",sec:"out",
+  stock:0,newcastle:0,onOrder:0,daysCover:0,avgDaily:700,
+  m:[22200,19800,21200,21400,24400,23100,21700,23500,20400,18100,21100,22600,12661],
+  sup:[
+       s("Milpharm Ltd",2.00,8000,"28-05-2026"),s("Aurobindo Pharma",2.15,6000,"18-06-2026"),
+       s("Zentiva",2.20,9000,"15-07-2026"),s("Crescent Pharma",2.25,5000,"13-07-2026"),
+       s("Teva UK Limited",2.30,7000,"08-07-2026")]},
+
+ {code:"T210",name:"Trimethoprim 200mg Tablets 14",cat:"Generics",sec:"out",
+  stock:0,newcastle:0,onOrder:0,daysCover:0,avgDaily:1000,
+  m:[28300,31100,34000,32500,31400,33100,30800,30200,30800,26500,28700,29200,22007],
+  sup:[
+       s("Sandoz",0.70,14000,"05-07-2026"),s("Genesis Pharmaceuticals",0.74,8000,"24-06-2026"),
+       s("Alloga UK Limited",0.71,6000,"25-06-2026",false,"Ipca"),s("Accord-UK Limited",0.76,9000,"26-06-2026"),
+       s("Crescent Pharma",0.78,0,"13-07-2026",true)]},
+
+ {code:"P505",name:"Prednisolone 5mg Tablets 28",cat:"Generics",sec:"fast",
+  stock:32000,newcastle:0,onOrder:0,daysCover:20,avgDaily:1600,
+  m:[44900,47600,43800,51700,53600,56000,47700,48800,41700,44300,43400,51200,84636],
+  sup:[
+       s("Medley Pharma",0.38,6000,"21-07-2026"),s("Genesis Pharmaceuticals",0.44,9000,"24-06-2026"),
+       s("Alloga UK Limited",0.42,7000,"25-06-2026",false,"Ipca"),s("Accord-UK Limited",0.43,8000,"26-06-2026"),
+       s("Crescent Pharma",0.45,10000,"13-07-2026")]},
+
+ {code:"Z118",name:"Cetirizine 10mg Tablets 30",cat:"OTC",sec:"fast",
+  stock:22500,newcastle:0,onOrder:0,daysCover:25,avgDaily:900,
+  m:[23100,26200,27300,29000,28000,31300,26900,26100,26400,28200,24300,25500,50438],
+  sup:[
+       s("Morningside",0.60,12000,"10-07-2026"),s("Genesis Pharmaceuticals",0.64,8000,"24-06-2026"),
+       s("Zentiva",0.63,9000,"15-07-2026"),s("Alloga UK Limited",0.62,7000,"25-06-2026",false,"Ipca"),
+       s("Accord-UK Limited",0.66,6000,"26-06-2026")]},
+
+ {code:"M710",name:"Montelukast 10mg Tablets 28",cat:"Generics",sec:"fast",
+  stock:23100,newcastle:0,onOrder:0,daysCover:22,avgDaily:1050,
+  m:[30400,28500,34200,29800,36000,36600,34300,30700,29800,31200,27500,30600,60931],
+  sup:[
+       s("Brown & Burk UK",1.05,8000,"02-07-2026"),s("Genesis Pharmaceuticals",1.18,7000,"24-06-2026"),
+       s("Aurobindo Pharma",1.15,9000,"18-06-2026"),s("Crescent Pharma",1.20,10000,"13-07-2026"),
+       s("Accord-UK Limited",1.25,5000,"26-06-2026")]},
+
+ {code:"F330",name:"Fluoxetine 20mg Capsules 30",cat:"Generics",sec:"fast",
+  stock:30000,newcastle:0,onOrder:0,daysCover:30,avgDaily:1000,
+  m:[26000,27200,27300,29900,31700,33600,29400,30100,30200,30000,26800,31700,60707],
+  sup:[
+       s("Wockhardt UK",0.66,12000,"05-07-2026"),s("Genesis Pharmaceuticals",0.70,8000,"24-06-2026"),
+       s("Zentiva",0.72,9000,"15-07-2026"),s("Alloga UK Limited",0.68,7000,"25-06-2026",false,"Ipca"),
+       s("Accord-UK Limited",0.72,6000,"26-06-2026")]},
+
+ {code:"N140",name:"Nitrofurantoin 100mg Capsules 28",cat:"Generics",sec:"fast",
+  stock:21600,newcastle:0,onOrder:0,daysCover:18,avgDaily:1200,
+  m:[36200,30200,36400,33600,35000,39000,36800,37700,32700,31000,37600,34800,65763],
+  sup:[
+       s("Teva UK Limited",1.40,15000,"08-07-2026"),s("Aurobindo Pharma",1.48,9000,"18-06-2026"),
+       s("Zentiva",1.50,8000,"15-07-2026"),s("Accord-UK Limited",1.55,6000,"26-06-2026"),
+       s("Sandoz",1.52,7000,"05-07-2026")]},
+
+ {code:"W303",name:"Warfarin 3mg Tablets 28",cat:"Generics",sec:"slow",
+  stock:21000,newcastle:0,onOrder:0,daysCover:70,avgDaily:300,
+  m:[16200,12400,14800,13100,13500,13300,11400,9000,7300,6800,6200,5100,3950],
+  sup:[
+       s("Medreich PLC",0.66,8000,"19-05-2026"),s("Crescent Pharma",0.70,10000,"13-07-2026"),
+       s("Genesis Pharmaceuticals",0.72,7000,"24-06-2026"),s("Accord-UK Limited",0.74,6000,"26-06-2026"),
+       s("Teva UK Limited",0.76,9000,"08-07-2026")]},
+
+ {code:"D505",name:"Diazepam 5mg Tablets 28",cat:"Ethical",sec:"slow",
+  stock:20900,newcastle:0,onOrder:0,daysCover:95,avgDaily:220,
+  m:[10700,9900,9800,9200,10300,8700,7900,6500,5500,4500,4700,3500,2684],
+  sup:[
+       s("Mawdsley-Brooks",0.52,7000,"18-06-2026"),s("Crescent Pharma",0.56,9000,"13-07-2026"),
+       s("Genesis Pharmaceuticals",0.60,6000,"24-06-2026"),s("Accord-UK Limited",0.58,5000,"26-06-2026"),
+       s("Teva UK Limited",0.57,8000,"08-07-2026")]},
+
+ {code:"R650",name:"Tramadol 50mg Capsules 100",cat:"Ethical",sec:"slow",
+  stock:22000,newcastle:0,onOrder:0,daysCover:110,avgDaily:200,
+  m:[10000,9800,8700,8800,9400,7700,6500,6300,5500,5000,3700,3400,2365],
+  sup:[
+       s("Ennogen Pharma",1.85,6000,"18-06-2026"),s("Accord-UK Limited",1.95,9000,"26-06-2026"),
+       s("Zentiva",2.00,8000,"15-07-2026"),s("Crescent Pharma",2.05,7000,"13-07-2026"),
+       s("Teva UK Limited",2.10,10000,"08-07-2026")]},
+
+ {code:"V440",name:"Pravastatin 40mg Tablets 28",cat:"Generics",sec:"slow",
+  stock:22500,newcastle:0,onOrder:0,daysCover:90,avgDaily:250,
+  m:[12500,10300,11500,10300,10100,10400,9600,7000,6700,5300,4600,4800,3367],
+  sup:[
+       s("Aurobindo Pharma",1.05,8000,"18-06-2026"),s("Genesis Pharmaceuticals",1.08,7000,"24-06-2026"),
+       s("Zentiva",1.10,9000,"15-07-2026"),s("Bristol Laboratories",1.06,6000,"06-05-2026"),
+       s("Accord-UK Limited",1.15,5000,"26-06-2026")]},
+
+ {code:"Q808",name:"Candesartan 8mg Tablets 28",cat:"Generics",sec:"slow",
+  stock:20400,newcastle:0,onOrder:0,daysCover:85,avgDaily:240,
+  m:[11400,9800,11300,11200,9800,10600,8800,7800,6900,5300,5000,3900,2972],
+  sup:[
+       s("Alloga UK Limited",0.98,11000,"25-06-2026",false,"Ipca"),s("Aurobindo Pharma",1.05,8000,"18-06-2026"),
+       s("Zentiva",1.04,9000,"15-07-2026"),s("Accord-UK Limited",1.08,6000,"26-06-2026"),
+       s("Medreich PLC",1.02,7000,"19-05-2026")]},
+
+ {code:"L210",name:"Lisinopril 10mg Tablets 28",cat:"Generics",sec:"low",
+  stock:11700,newcastle:0,onOrder:0,daysCover:9,avgDaily:1300,
+  m:[37900,40100,42300,39200,47400,49400,44300,40100,36100,37800,35000,34500,35874],
+  sup:[
+       s("Zentiva",0.78,16000,"15-07-2026"),s("Genesis Pharmaceuticals",0.80,9000,"24-06-2026"),
+       s("Alloga UK Limited",0.82,7000,"25-06-2026",false,"Ipca"),s("Accord-UK Limited",0.83,8000,"26-06-2026"),
+       s("Crescent Pharma",0.86,10000,"13-07-2026")]},
+
+ {code:"T202",name:"Atorvastatin 20mg Tablets 28",cat:"Generics",sec:"low",
+  stock:26400,newcastle:0,onOrder:0,daysCover:11,avgDaily:2400,
+  m:[77400,71600,71400,74700,82700,78400,77400,75900,73400,61900,72200,67500,73803],
+  sup:[
+       s("Genesis Pharmaceuticals",0.98,14000,"24-06-2026"),s("Aurobindo Pharma",1.02,9000,"18-06-2026"),
+       s("Zentiva",1.00,8000,"15-07-2026"),s("Teva UK Limited",0.95,12000,"08-07-2026"),
+       s("Accord-UK Limited",1.10,6000,"26-06-2026"),s("Sandoz",1.05,7000,"05-07-2026")]},
+
+ {code:"P100",name:"Paracetamol 500mg Tablets 100",cat:"OTC",sec:"low",
+  stock:24000,newcastle:0,onOrder:0,daysCover:8,avgDaily:3000,
+  m:[81700,82700,98400,107900,94700,107600,102600,87000,93800,94000,85000,96800,103406],
+  sup:[
+       s("Sandoz",0.88,20000,"05-07-2026"),s("Teva UK Limited",0.90,15000,"08-07-2026"),
+       s("Bristol Laboratories",0.92,9000,"06-05-2026"),s("Accord-UK Limited",0.95,8000,"26-06-2026"),
+       s("Zentiva",0.96,10000,"15-07-2026")]},
+
+ {code:"R525",name:"Ramipril 5mg Capsules 28",cat:"Generics",sec:"low",
+  stock:22400,newcastle:0,onOrder:0,daysCover:7,avgDaily:3200,
+  m:[90900,96600,106300,111100,118000,101200,96400,100200,86400,98200,88800,94300,96661],
+  sup:[
+       s("Accord-UK Limited",0.46,20000,"26-06-2026"),s("Alloga UK Limited",0.47,7000,"25-06-2026",false,"Ipca"),
+       s("Crescent Pharma",0.48,9000,"13-07-2026"),s("Genesis Pharmaceuticals",0.50,6000,"24-06-2026"),
+       s("Brown & Burk UK",0.49,8000,"02-07-2026"),s("Teva UK Limited",0.52,10000,"08-07-2026")]},
+
+ {code:"L550",name:"Losartan 50mg Tablets 28",cat:"Generics",sec:"low",
+  stock:15000,newcastle:0,onOrder:0,daysCover:10,avgDaily:1500,
+  m:[48700,43900,46100,51800,47700,56900,50900,43900,48300,46800,39400,40600,47093],
+  sup:[
+       s("Morningside",0.76,12000,"10-07-2026"),s("Genesis Pharmaceuticals",0.80,9000,"24-06-2026"),
+       s("Zentiva",0.79,8000,"15-07-2026"),s("Alloga UK Limited",0.82,7000,"25-06-2026",false,"Ipca"),
+       s("Accord-UK Limited",0.85,6000,"26-06-2026")]},
+
+ {code:"A210",name:"Amlodipine 10mg Tablets 28",cat:"Generics",sec:"low",
+  stock:14400,newcastle:0,onOrder:0,daysCover:9,avgDaily:1600,
+  m:[52000,45200,50200,49700,56300,58500,52500,45900,42900,44300,44700,47700,51691],
+  sup:[
+       s("Milpharm Ltd",0.30,18000,"05-07-2026"),s("Crescent Pharma",0.31,10000,"13-07-2026"),
+       s("Genesis Pharmaceuticals",0.33,7000,"24-06-2026"),s("Alloga UK Limited",0.32,8000,"25-06-2026",false,"Ipca"),
+       s("Teva UK Limited",0.33,9000,"08-07-2026")]},
+
+ {code:"A075",name:"Aspirin 75mg Tablets 28",cat:"OTC",sec:"low",
+  stock:13200,newcastle:0,onOrder:0,daysCover:11,avgDaily:1200,
+  m:[37900,34400,37100,40000,38800,43400,42800,37300,36600,34000,34700,36800,35310],
+  sup:[
+       s("Medley Pharma",0.62,10000,"21-07-2026"),s("Crescent Pharma",0.66,9000,"13-07-2026"),
+       s("Genesis Pharmaceuticals",0.68,7000,"24-06-2026"),s("Alloga UK Limited",0.65,8000,"25-06-2026",false,"Ipca"),
+       s("Accord-UK Limited",0.70,6000,"26-06-2026")]},
+
+ {code:"I484",name:"Ibuprofen 400mg Tablets 84",cat:"OTC",sec:"low",
+  stock:22800,newcastle:0,onOrder:0,daysCover:12,avgDaily:1900,
+  m:[57900,57200,54200,63700,62500,70500,66300,56600,54200,50300,52700,51900,57399],
+  sup:[
+       s("Zentiva",1.02,14000,"15-07-2026"),s("Genesis Pharmaceuticals",1.05,9000,"24-06-2026"),
+       s("Aurobindo Pharma",1.06,8000,"18-06-2026"),s("Teva UK Limited",1.00,12000,"08-07-2026"),
+       s("Accord-UK Limited",1.10,6000,"26-06-2026")]},
+
+ {code:"M330",name:"Mirtazapine 30mg Tablets 28",cat:"Generics",sec:"low",
+  stock:11000,newcastle:0,onOrder:0,daysCover:10,avgDaily:1100,
+  m:[35500,30600,36200,39800,41300,40000,35000,36400,31900,32900,30900,32100,29963],
+  sup:[
+       s("Medreich PLC",0.72,9000,"19-05-2026"),s("Genesis Pharmaceuticals",0.78,7000,"24-06-2026"),
+       s("Crescent Pharma",0.76,8000,"13-07-2026"),s("Zentiva",0.79,10000,"15-07-2026"),
+       s("Accord-UK Limited",0.82,6000,"26-06-2026")]},
+
+ {code:"G756",name:"Pregabalin 75mg Capsules 56",cat:"Generics",sec:"low",
+  stock:10400,newcastle:0,onOrder:0,daysCover:8,avgDaily:1300,
+  m:[42100,40300,43400,39600,45700,47200,46200,41300,36500,38600,39100,36900,42396],
+  sup:[
+       s("Wockhardt UK",1.24,9000,"05-07-2026"),s("Genesis Pharmaceuticals",1.32,7000,"24-06-2026"),
+       s("Aurobindo Pharma",1.30,8000,"18-06-2026"),s("Crescent Pharma",1.35,10000,"13-07-2026"),
+       s("Accord-UK Limited",1.40,6000,"26-06-2026")]}
 ];
 
 const MONTHS=["Jul 25","Aug 25","Sep 25","Oct 25","Nov 25","Dec 25","Jan 26","Feb 26","Mar 26","Apr 26","May 26","Jun 26","Jul 26"];
