@@ -1026,22 +1026,18 @@ function renderList(){
             const mineRow=isMine(x.name), sel=d&&d.supplier===x.name;
             let act;
             if(sel){
-              act=`<div class="stepper ${d.type==="handoff"?"ho":""}">
+              act=`<div class="stepper">
                 <button class="stepBtn" data-step="${p.code}" data-dir="-1" aria-label="decrease quantity">−</button>
                 <input class="stepNum" type="number" min="0" step="${STEP}" value="${d.qty}" data-qval="${p.code}" aria-label="quantity">
                 <button class="stepBtn" data-step="${p.code}" data-dir="1" aria-label="increase quantity">+</button>
                 <button class="stepRm" data-rmrow="${p.code}" aria-label="remove from basket">✕</button>
               </div>`;
-            }else if(mineRow){
+            }else{
               act = x.oos
                 ? `<span class="actMuted">out of stock</span>`
-                : `<button class="cartBtn" data-add="${p.code}" data-sup="${esc(x.name)}" data-type="po" title="Add to basket — order from ${short(x.name)}">
+                : `<button class="cartBtn" data-add="${p.code}" data-sup="${esc(x.name)}" title="Add to basket — ${short(x.name)}">
                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2 3h3l2.2 11a1.6 1.6 0 0 0 1.6 1.3h8.4a1.6 1.6 0 0 0 1.6-1.3L21 7H6"/><path d="M15 5.5v4M13 7.5h4"/></svg>
                    </button>`;
-            }else{
-              act = `<button class="cartBtn ho" data-add="${p.code}" data-sup="${esc(x.name)}" data-type="handoff" title="Hand off to ${x.owner}">
-                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>${x.init}
-                     </button>`;
             }
             return `
             <tr class="${best&&x.name===best.name?"win":""} ${x.oos?"oos":""} ${sel?"picked":""}">
@@ -1063,7 +1059,7 @@ function renderList(){
         </table></div>
         <div class="rebFoot">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg>
-          <span>Net price = list price after annual rebate. Tap the <b>basket</b> on any of your suppliers to add it, then set the quantity with − / +. The envelope hands a line to another buyer.</span>
+          <span>Net price = list price after annual rebate. Tap the <b>basket</b> on any supplier to add it, then set the quantity with − / +. Forwarding to the buyers happens from the basket.</span>
         </div>
       </div></div></div>
     </article>`;
@@ -1198,9 +1194,9 @@ document.addEventListener("click",e=>{
   }
   const add=e.target.closest("[data-add]");
   if(add){
-    const c=add.dataset.add, sup=add.dataset.sup, type=add.dataset.type, p=DATA.find(x=>x.code===c);
-    state.dest.set(c,{type,supplier:sup,qty:suggest(p)});
-    toast(type==="po"?`Added to basket — ${short(sup)}`:`Handed off to ${OWNER[sup]}`);
+    const c=add.dataset.add, sup=add.dataset.sup, p=DATA.find(x=>x.code===c);
+    state.dest.set(c,{type:isMine(sup)?"po":"handoff",supplier:sup,qty:suggest(p)});
+    toast(`Added to basket — ${short(sup)}`);
     renderList();renderBaskets();return;
   }
   const step=e.target.closest("[data-step]");
