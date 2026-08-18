@@ -429,6 +429,18 @@ tr.win .netv{color:var(--accent);text-shadow:0 0 18px var(--accent-glow)}
 .toast.on{opacity:1;transform:translate(-50%,0)}
 .toast svg{width:17px;height:17px;color:var(--accent)}
 
+/* ---- email template preview ---- */
+.emailTpl{font-size:13px;color:var(--ink)}
+.emHead{border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:14px}
+.emRow{display:flex;gap:10px;padding:8px 12px;border-bottom:1px solid var(--line)}
+.emRow:last-child{border-bottom:0}
+.emK{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-faint);width:64px;flex:none;padding-top:2px}
+.emV{color:var(--ink-soft)}
+.emP{margin:0 0 12px;color:var(--ink-soft);line-height:1.55}
+.emTotal{margin:16px 0 12px;padding-top:12px;border-top:1px solid var(--line);text-align:right;color:var(--ink-soft)}
+.emTotal b{font-family:var(--mono);color:var(--accent);font-size:15px;font-variant-numeric:tabular-nums;margin-left:8px}
+.poTbl td .pc{font-family:var(--mono);font-size:10px;color:var(--ink-faint);margin-top:2px}
+
 /* ============ RESPONSIVE ============ */
 @media (max-width:1120px){
   .rHead{grid-template-columns:minmax(170px,2fr) 80px minmax(140px,1.2fr) minmax(140px,1.1fr) 28px}
@@ -569,14 +581,10 @@ tr.win .netv{color:var(--accent);text-shadow:0 0 18px var(--accent-glow)}
   </div>
   <div class="dBody" id="basketBody"></div>
   <div class="dFoot">
-    <div class="totRow"><span>Purchase orders total</span><b id="poVal">£0.00</b></div>
-    <button class="btn p" id="sendPO" style="justify-content:center">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-      Send POs to PO System
-    </button>
-    <button class="btn s" id="sendMail" style="justify-content:center">
+    <div class="totRow"><span>Basket total</span><b id="poVal">£0.00</b></div>
+    <button class="btn p" id="sendMail" style="justify-content:center">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
-      Email hand-offs to buyers
+      Email basket to buyers
     </button>
   </div>
 </aside>
@@ -586,8 +594,8 @@ tr.win .netv{color:var(--accent);text-shadow:0 0 18px var(--accent-glow)}
   <div class="mCard">
     <div class="mHead">
       <div>
-        <h2 id="mTitle">Purchase Order preview</h2>
-        <p id="mSub">BNS-PurchaseOrder</p>
+        <h2 id="mTitle">Email to buyers</h2>
+        <p id="mSub">A clear template — ready to send</p>
       </div>
       <button class="xBtn" id="closeModal" aria-label="Close">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
@@ -1048,37 +1056,27 @@ function basketItem(c,d){
     </button></div>`;
 }
 function renderBaskets(){
-  const po=poEntries(), ho=handoffEntries(), n=po.length+ho.length;
+  const all=[...state.dest], n=all.length;
   const cnt=document.getElementById("basketCount");
   cnt.textContent=n; cnt.classList.toggle("zero",n===0);
   document.getElementById("basketSub").textContent =
-    n?`${po.length} to order · ${ho.length} to hand off`:"Nothing selected";
+    n?`${n} line${n>1?"s":""} to email`:"Nothing selected";
 
+  // every basket line is grouped by the buyer who owns that supplier account
+  const groups={}; all.forEach(([c,d])=>{const o=OWNER[d.supplier];(groups[o]=groups[o]||[]).push([c,d]);});
   let html="";
-  const poGroups={}; po.forEach(([c,d])=>{(poGroups[d.supplier]=poGroups[d.supplier]||[]).push([c,d]);});
-  Object.entries(poGroups).forEach(([sup,items])=>{
+  Object.entries(groups).forEach(([owner,items])=>{
     html+=`<section class="bSec">
-      <h3><span class="stripe" style="background:var(--accent);color:var(--accent)"></span>${sup} — Purchase Order</h3>
-      <p class="bd">Goes into the PO System pre-filled. No re-keying.</p>
+      <div class="hoOwner"><span class="init">${INIT[owner]}</span>${owner}${owner===BUYER?" (you)":""}</div>
       ${items.map(([c,d])=>basketItem(c,d)).join("")}</section>`;
   });
-  if(ho.length){
-    const hg={}; ho.forEach(([c,d])=>{const o=OWNER[d.supplier];(hg[o]=hg[o]||[]).push([c,d]);});
-    html+=`<section class="bSec">
-      <h3><span class="stripe" style="background:var(--fast);color:var(--fast)"></span>Hand off to other buyers</h3>
-      <p class="bd">Emailed so each owner orders from their own account.</p>
-      ${Object.entries(hg).map(([owner,items])=>
-        `<div class="hoOwner"><span class="init">${INIT[owner]}</span>${owner}</div>`+
-        items.map(([c,d])=>basketItem(c,d)).join("")).join("")}</section>`;
-  }
   document.getElementById("basketBody").innerHTML=html||
     `<div class="bEmpty" style="margin:22px 0">Basket is empty.<br>Open a product and tap the basket on a supplier.</div>`;
 
   let val=0;
-  po.forEach(([c,d])=>{const p=DATA.find(x=>x.code===c),sp=p.sup.find(x=>x.name===d.supplier);if(sp)val+=net(sp)*d.qty;});
+  all.forEach(([c,d])=>{const p=DATA.find(x=>x.code===c),sp=p.sup.find(x=>x.name===d.supplier);if(sp)val+=net(sp)*d.qty;});
   document.getElementById("poVal").textContent=money(val);
-  document.getElementById("sendPO").disabled=!po.length;
-  document.getElementById("sendMail").disabled=!ho.length;
+  document.getElementById("sendMail").disabled=!n;
 }
 const renderAll=()=>{renderNav();renderList();renderBaskets();};
 
@@ -1102,63 +1100,54 @@ document.getElementById("mCancel").onclick=closeModal;
 scrim.onclick=()=>{closeModal();closeDrawer();};
 document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeModal();closeDrawer();}});
 
-/* ---------- send actions ---------- */
-document.getElementById("sendPO").onclick=()=>{
-  const po=poEntries(); if(!po.length) return;
-  const groups={}; po.forEach(([c,d])=>{(groups[d.supplier]=groups[d.supplier]||[]).push([c,d]);});
-  const nPO=Object.keys(groups).length;
-  const issues=validate(), blockers=issues.filter(i=>i.bad);
-  const checks=issues.length
-    ? `<div class="checkBox ${blockers.length?"bad":"warn"}">
-         <div class="ckHead">${blockers.length?`${blockers.length} issue${blockers.length>1?"s":""} to fix before sending`:"Checks passed with warnings"}</div>
-         <ul>${issues.map(i=>`<li class="${i.bad?"bad":"warn"}">${i.t}</li>`).join("")}</ul>
-       </div>`
-    : `<div class="checkBox ok"><div class="ckHead">All checks passed</div>
-         <p>No zero quantities, unavailable suppliers or non-assigned accounts.</p></div>`;
-  const poBlocks=Object.entries(groups).map(([sup,items])=>`
-    <div class="mailGrp">
-      <div class="gh"><span class="init">${INIT[BUYER]}</span>${sup} — Purchase Order<span class="who">${items.length} line${items.length>1?"s":""}</span></div>
-      <div style="overflow-x:auto"><table class="poTbl">
-        <thead><tr><th>Site</th><th>Part No.</th><th>Description</th><th>Qty</th><th>Price</th><th>Value</th></tr></thead>
-        <tbody>${items.map(([c,d])=>{const p=DATA.find(x=>x.code===c),sp=p.sup.find(x=>x.name===sup);
-          return `<tr><td class="m">LA</td><td class="m">${p.code}</td><td>${p.name}</td>
-            <td class="m">${nfmt(d.qty)}</td><td class="m">${money(sp?sp.price:0)}</td>
-            <td class="m">${money((sp?sp.price:0)*d.qty)}</td></tr>`;}).join("")}</tbody>
-      </table></div>
-    </div>`).join("");
-  document.getElementById("mTitle").textContent=nPO>1?`${nPO} Purchase Orders preview`:"Purchase Order preview";
-  document.getElementById("mSub").textContent=`BNS-PurchaseOrder · one PO per supplier`;
-  document.getElementById("mBody").innerHTML=checks+
-    `<p style="margin:0 0 13px;font-size:13px;color:var(--ink-soft)">Each supplier becomes its own PO, pre-filled — nothing to re-type.</p>`+poBlocks;
-  const cf=document.getElementById("mConfirm");
-  cf.textContent=blockers.length?"Fix issues to continue":(nPO>1?"Send all POs":"Send to PO System");
-  cf.disabled=blockers.length>0;
-  cf.onclick=()=>{
-    const k=po.length; po.forEach(([c])=>state.dest.delete(c)); renderAll(); closeModal();
-    toast(`${k} line${k>1?"s":""} sent across ${nPO} PO${nPO>1?"s":""}`);
-  };
-  modal.classList.add("on"); scrim.classList.add("on");
-};
+/* ---------- send: one clear email template to the buyers ---------- */
 document.getElementById("sendMail").onclick=()=>{
-  const ho=handoffEntries(); if(!ho.length) return;
-  const groups={};
-  ho.forEach(([c,d])=>{const o=OWNER[d.supplier];(groups[o]=groups[o]||[]).push([c,d]);});
-  document.getElementById("mTitle").textContent="Email hand-offs to buyers";
-  document.getElementById("mSub").textContent="commercial@ · grouped by account owner";
-  document.getElementById("mBody").innerHTML=
-    `<p style="margin:0 0 13px;font-size:13px;color:var(--ink-soft)">Each buyer sees only the lines on their own accounts.</p>`+
-    Object.entries(groups).map(([owner,items])=>`
-      <div class="mailGrp">
-        <div class="gh"><span class="init">${INIT[owner]||"?"}</span>${owner}
-          <span class="who">${items.length} line${items.length>1?"s":""}</span></div>
-        <ul>${items.map(([c,d])=>{const p=DATA.find(x=>x.code===c),sp=p.sup.find(x=>x.name===d.supplier);
-          return `<li>${p.name} <span style="color:var(--ink-faint)">· ${d.supplier}</span> <span class="q">${nfmt(d.qty)} @ ${money(net(sp),3)}</span></li>`;}).join("")}</ul>
-      </div>`).join("");
+  const all=[...state.dest]; if(!all.length) return;
+  const warns=[];
+  all.forEach(([c,d])=>{const p=DATA.find(x=>x.code===c),sp=p.sup.find(x=>x.name===d.supplier);
+    if(!d.qty||d.qty<=0) warns.push(`${p.name} — quantity is zero`);
+    if(sp&&isStale(sp))  warns.push(`${p.name} — ${d.supplier} price is ${ageDays(sp.date)} days old`);
+  });
+  const groups={}; all.forEach(([c,d])=>{const o=OWNER[d.supplier];(groups[o]=groups[o]||[]).push([c,d]);});
+  let total=0; all.forEach(([c,d])=>{const p=DATA.find(x=>x.code===c),sp=p.sup.find(x=>x.name===d.supplier);if(sp)total+=net(sp)*d.qty;});
+  const dateStr=TODAY.toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"});
+
+  const warnBox = warns.length
+    ? `<div class="checkBox warn"><div class="ckHead">${warns.length} thing${warns.length>1?"s":""} to double-check</div>
+         <ul>${warns.map(t=>`<li class="warn">${t}</li>`).join("")}</ul></div>` : "";
+
+  const groupBlocks=Object.entries(groups).map(([owner,items])=>{
+    let sub=0; items.forEach(([c,d])=>{const p=DATA.find(x=>x.code===c),sp=p.sup.find(x=>x.name===d.supplier);if(sp)sub+=net(sp)*d.qty;});
+    return `<div class="mailGrp">
+      <div class="gh"><span class="init">${INIT[owner]}</span>${owner}${owner===BUYER?" (you)":""}<span class="who">${items.length} line${items.length>1?"s":""} · ${money(sub)}</span></div>
+      <div style="overflow-x:auto"><table class="poTbl">
+        <thead><tr><th>Product</th><th>Supplier</th><th>Qty</th><th>Net</th><th>Value</th></tr></thead>
+        <tbody>${items.map(([c,d])=>{const p=DATA.find(x=>x.code===c),sp=p.sup.find(x=>x.name===d.supplier);
+          return `<tr><td>${p.name}<div class="pc">${p.code}</div></td><td>${d.supplier}</td>
+            <td class="m">${nfmt(d.qty)}</td><td class="m">${money(net(sp),3)}</td><td class="m">${money(net(sp)*d.qty)}</td></tr>`;}).join("")}</tbody>
+      </table></div>
+    </div>`;}).join("");
+
+  document.getElementById("mTitle").textContent="Email to buyers";
+  document.getElementById("mSub").textContent="A clear template — ready to send";
+  document.getElementById("mBody").innerHTML = warnBox + `
+    <div class="emailTpl">
+      <div class="emHead">
+        <div class="emRow"><span class="emK">Subject</span><span class="emV">Replenishment — lines to order (${dateStr})</span></div>
+        <div class="emRow"><span class="emK">To</span><span class="emV">Buyers group · buyers@bnsdistribution.co.uk</span></div>
+        <div class="emRow"><span class="emK">From</span><span class="emV">${BUYER} · Generics desk</span></div>
+      </div>
+      <p class="emP">Hi team,</p>
+      <p class="emP">Please raise POs for the lines below on your accounts — grouped by whose supplier they sit on. All prices are net of rebate.</p>
+      ${groupBlocks}
+      <p class="emTotal">Total across all lines <b>${money(total)}</b></p>
+      <p class="emP">Thanks,<br>${BUYER}</p>
+    </div>`;
   const cf=document.getElementById("mConfirm");
   cf.textContent="Send email"; cf.disabled=false;
   cf.onclick=()=>{
-    const k=ho.length; ho.forEach(([c])=>state.dest.delete(c)); renderAll(); closeModal();
-    toast(`${k} line${k>1?"s":""} emailed to the buyers' group`);
+    const k=all.length; state.dest.clear(); renderAll(); closeModal();
+    toast(`Email sent — ${k} line${k>1?"s":""} to the buyers' group`);
   };
   modal.classList.add("on"); scrim.classList.add("on");
 };
