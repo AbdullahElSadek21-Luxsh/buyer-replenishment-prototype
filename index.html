@@ -671,19 +671,22 @@ const OWNER = {
 };
 const INIT = {Rob:"RO",Matt:"MA",Omkar:"OM",Denalka:"DE",Zain:"ZA"};
 /* a buyer's assigned suppliers = the accounts they own (illustrative for the demo) */
-/* ONE shared master of who is contracted with each supplier — the same list
-   for everyone. The buyer just SELECTS which suppliers are theirs; that marks
-   them "mine". It never writes to Buying History — the tool only emails. */
+/* Everyone sees the full supplier list. The buyer freely SELECTS which ones
+   they're contracted with — that marks them "mine". A supplier the buyer
+   hasn't selected shows its default owner (or "unassigned" if that was the
+   buyer). Persisted; never writes to Buying History — the tool only emails. */
 const ALL_SUPPLIERS = Object.keys(OWNER);
-const DEFAULT_OWNER = Object.assign({}, OWNER);   // the presets, before any edits
-(function loadOwners(){
-  try{ const raw=localStorage.getItem("replenish-owners");
-    if(raw){ const o=JSON.parse(raw); Object.keys(o).forEach(k=>{ if((k in OWNER) && (o[k] in INIT)) OWNER[k]=o[k]; }); } }catch(e){}
-})();
-function saveOwners(){ try{ localStorage.setItem("replenish-owners", JSON.stringify(OWNER)); }catch(e){} }
-const isMine    = name => OWNER[name]===BUYER;
-const ownerOf   = name => OWNER[name]||"—";
-const ownerInit = name => INIT[OWNER[name]]||"?";
+const DEFAULT_OWNER = Object.assign({}, OWNER);   // base owner per supplier
+function loadMine(){
+  try{ const raw=localStorage.getItem("replenish-mine");
+    if(raw){ return new Set(JSON.parse(raw).filter(n=>ALL_SUPPLIERS.includes(n))); } }catch(e){}
+  return new Set(ALL_SUPPLIERS.filter(n=>DEFAULT_OWNER[n]===BUYER));
+}
+function saveMine(){ try{ localStorage.setItem("replenish-mine", JSON.stringify([...MINE])); }catch(e){} }
+let MINE = loadMine();
+const isMine    = name => MINE.has(name);
+const ownerOf   = name => isMine(name) ? BUYER : (DEFAULT_OWNER[name]!==BUYER ? DEFAULT_OWNER[name] : "");
+const ownerInit = name => { const o=ownerOf(name); return (o && INIT[o]) ? INIT[o] : "—"; };
 const short  = name => name.split(" ")[0];
 const esc    = t => String(t).replace(/&/g,"&amp;").replace(/"/g,"&quot;");
 const s = (name,price,stock,date,oos=false,note="") =>
@@ -1072,10 +1075,10 @@ function recommend(p){
   }
   /* cheapest overall belongs to another buyer */
   const owner=ownerOf(bestAll.name);
-  why.push(`Cheapest is ${bestAll.name} at ${money(net(bestAll),3)} — ${owner}'s account`);
+  why.push(`Cheapest is ${bestAll.name} at ${money(net(bestAll),3)} — ${owner?owner+"'s account":"unassigned"}`);
   if(bestMine) why.push(`Your cheapest is ${short(bestMine.name)} at ${money(net(bestMine),3)}, ${pence(net(bestMine)-net(bestAll))} more`);
   return{action:"handoff",sup:bestAll,
-         label:`Cheaper on ${owner}'s account (${short(bestAll.name)})`,qty:suggest(p),why,conf:confidence(p),tone:"warn"};
+         label:`Cheaper on ${owner?owner+"'s":"an unassigned"} account (${short(bestAll.name)})`,qty:suggest(p),why,conf:confidence(p),tone:"warn"};
 }
 
 /* dest: code -> {type:'po'|'handoff', supplier, qty}.  A product has ONE destination. */
@@ -1325,7 +1328,7 @@ function renderBaskets(){
   Object.entries(groups).forEach(([sup,items])=>{
     const owner=ownerOf(sup);
     html+=`<section class="bSec">
-      <div class="hoOwner"><span class="init">${ownerInit(sup)}</span>${sup}<span class="bown">· ${owner}${owner===BUYER?" (you)":""}</span></div>
+      <div class="hoOwner"><span class="init">${ownerInit(sup)}</span>${sup}<span class="bown">· ${owner||"unassigned"}${owner===BUYER?" (you)":""}</span></div>
       ${items.map(([c,d])=>basketItem(c,d)).join("")}</section>`;
   });
   document.getElementById("basketBody").innerHTML=html||
@@ -1354,9 +1357,10 @@ function toast(msg){
 
 /* ---------- drawer + modal ---------- */
 const drawer=document.getElementById("drawer"), scrim=document.getElementById("scrim"), modal=document.getElementById("modal");
+let suppliersDirty=false;
 const openDrawer=()=>{drawer.classList.add("on");scrim.classList.add("on");};
 const closeDrawer=()=>{drawer.classList.remove("on");if(!modal.classList.contains("on"))scrim.classList.remove("on");};
-const closeModal=()=>{modal.classList.remove("on");if(!drawer.classList.contains("on"))scrim.classList.remove("on");};
+const closeModal=()=>{if(suppliersDirty){suppliersDirty=false;renderAll();}modal.classList.remove("on");if(!drawer.classList.contains("on"))scrim.classList.remove("on");};
 document.getElementById("openBasket").onclick=openDrawer;
 document.getElementById("closeDrawer").onclick=closeDrawer;
 document.getElementById("closeModal").onclick=closeModal;
@@ -1384,7 +1388,7 @@ document.getElementById("sendMail").onclick=()=>{
     const owner=ownerOf(sup);
     let sub=0; items.forEach(([c,d])=>{const p=DATA.find(x=>x.code===c),sp=p.sup.find(x=>x.name===sup);if(sp)sub+=net(sp)*d.qty;});
     return `<div class="mailGrp">
-      <div class="gh"><span class="init">${ownerInit(sup)}</span>${sup}<span class="who">${owner}${owner===BUYER?" (you)":""} · ${items.length} line${items.length>1?"s":""} · ${money(sub)}</span></div>
+      <div class="gh"><span class="init">${ownerInit(sup)}</span>${sup}<span class="who">${owner||"unassigned"}${owner===BUYER?" (you)":""} · ${items.length} line${items.length>1?"s":""} · ${money(sub)}</span></div>
       <div style="overflow-x:auto"><table class="poTbl">
         <thead><tr><th>Product</th><th>Code</th><th>Qty</th><th>Net</th><th>Value</th></tr></thead>
         <tbody>${items.map(([c,d])=>{const p=DATA.find(x=>x.code===c),sp=p.sup.find(x=>x.name===sup);
@@ -1421,10 +1425,11 @@ document.addEventListener("click",e=>{
   const st=e.target.closest("[data-suptoggle]");
   if(st){
     const n=st.dataset.suptoggle;
-    OWNER[n] = isMine(n) ? DEFAULT_OWNER[n] : BUYER;   // claim it, or hand it back to its default owner
-    saveOwners(); renderAll();
+    if(MINE.has(n)) MINE.delete(n); else MINE.add(n);   // freely toggle
+    saveMine(); suppliersDirty=true;                     // apply to the app once, on close (avoids re-rendering 40 rows per click)
     document.getElementById("mSub").textContent=`${ALL_SUPPLIERS.filter(isMine).length} of ${ALL_SUPPLIERS.length} are yours`;
-    document.getElementById("mBody").innerHTML=suppliersEditorHTML();
+    st.classList.toggle("on"); st.querySelector(".pick").classList.toggle("on");
+    st.querySelector(".supToggleOwner").textContent = isMine(n) ? "yours" : (ownerOf(n)||"unassigned");
     return;
   }
   const sec=e.target.closest("[data-sec]");
@@ -1475,7 +1480,7 @@ function suppliersEditorHTML(){
       return `<button class="supToggle ${on?"on":""}" data-suptoggle="${esc(name)}">
         <span class="pick ${on?"on":""}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg></span>
         <span class="supToggleName">${name}</span>
-        <span class="supToggleOwner">${on?"yours":OWNER[name]}</span>
+        <span class="supToggleOwner">${on?"yours":(ownerOf(name)||"unassigned")}</span>
       </button>`;}).join("")+`</div>`;
 }
 function openSuppliersEditor(){
