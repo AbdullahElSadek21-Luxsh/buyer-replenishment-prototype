@@ -776,7 +776,7 @@ const money = (v,d=2) => "£"+v.toFixed(d);
 const pence = v => v<1 ? (v*100).toFixed(1)+"p" : "£"+v.toFixed(2);   // buyers talk in pence
 const nfmt = v => v.toLocaleString("en-GB");
 const bestOf = list => { const a=list.filter(x=>!x.oos); return a.length?a.reduce((b,x)=>net(x)<net(b)?x:b):null; };
-const suggest = p => Math.max(0, Math.round(((p.avgDaily*30)-p.stock-p.onOrder)/100)*100);
+const suggest = p => Math.max(0, Math.round(((p.avgDaily*30)-p.stock-p.onOrder)/200)*200);
 const ratio = p => { const prev=p.m.slice(-7,-1); const avg=prev.reduce((a,b)=>a+b,0)/prev.length; return avg?p.m[p.m.length-1]/avg:1; };
 
 /* ---------- data-quality: how old is a quoted price? ---------- */
@@ -852,7 +852,7 @@ function recommend(p){
 const state={filter:"all",section:"low",q:"",open:null,dest:new Map()};
 const poEntries      = () => [...state.dest].filter(([,d])=>d.type==="po");
 const handoffEntries = () => [...state.dest].filter(([,d])=>d.type==="handoff");
-const STEP=100;
+const STEP=200;
 
 /* ---------- pre-send validation (PO baskets only) ---------- */
 function validate(){
