@@ -551,7 +551,7 @@ tr.win .netv{color:var(--accent);text-shadow:0 0 18px var(--accent-glow)}
     </div>
 
     <div class="rgroup">
-      <div class="rlabRow"><span class="rlab">Supplier filter</span><button class="rlabBtn" id="editSups" title="Choose which suppliers are yours">Edit my suppliers</button></div>
+      <div class="rlabRow"><span class="rlab">Supplier filter</span><button class="rlabBtn" id="editSups" title="Choose which suppliers you're contracted with">Select my suppliers</button></div>
       <select class="sel" id="supSel" aria-label="Filter by supplier"></select>
     </div>
 
@@ -671,21 +671,19 @@ const OWNER = {
 };
 const INIT = {Rob:"RO",Matt:"MA",Omkar:"OM",Denalka:"DE",Zain:"ZA"};
 /* a buyer's assigned suppliers = the accounts they own (illustrative for the demo) */
-/* the buyer chooses their own suppliers in the UI (flexible — the tool only
-   emails, it never writes back to Buying History). Persisted per buyer. */
+/* ONE shared master of who is contracted with each supplier — the same list
+   for everyone. The buyer just SELECTS which suppliers are theirs; that marks
+   them "mine". It never writes to Buying History — the tool only emails. */
 const ALL_SUPPLIERS = Object.keys(OWNER);
-const DEFAULT_MINE  = ALL_SUPPLIERS.filter(n=>OWNER[n]===BUYER);
-function loadMine(){
-  try{ const raw=localStorage.getItem("replenish-mine-"+BUYER);
-    if(raw){ const a=JSON.parse(raw).filter(n=>ALL_SUPPLIERS.includes(n)); return new Set(a); } }catch(e){}
-  return new Set(DEFAULT_MINE);
-}
-function saveMine(){ try{ localStorage.setItem("replenish-mine-"+BUYER, JSON.stringify([...ASSIGNED])); }catch(e){} }
-let ASSIGNED = loadMine();
-const isMine    = name => ASSIGNED.has(name);
-/* who a supplier is shown as belonging to = the buyer if they've claimed it, else its default owner */
-const ownerOf   = name => isMine(name) ? BUYER : (OWNER[name]||"—");
-const ownerInit = name => INIT[ownerOf(name)]||"?";
+const DEFAULT_OWNER = Object.assign({}, OWNER);   // the presets, before any edits
+(function loadOwners(){
+  try{ const raw=localStorage.getItem("replenish-owners");
+    if(raw){ const o=JSON.parse(raw); Object.keys(o).forEach(k=>{ if((k in OWNER) && (o[k] in INIT)) OWNER[k]=o[k]; }); } }catch(e){}
+})();
+function saveOwners(){ try{ localStorage.setItem("replenish-owners", JSON.stringify(OWNER)); }catch(e){} }
+const isMine    = name => OWNER[name]===BUYER;
+const ownerOf   = name => OWNER[name]||"—";
+const ownerInit = name => INIT[OWNER[name]]||"?";
 const short  = name => name.split(" ")[0];
 const esc    = t => String(t).replace(/&/g,"&amp;").replace(/"/g,"&quot;");
 const s = (name,price,stock,date,oos=false,note="") =>
@@ -1161,7 +1159,7 @@ function renderNav(){
   }).join("");
   const attn=carried().filter(p=>sigs(p).length>0).length;
   document.getElementById("attnCount").textContent=attn;
-  document.getElementById("supCount").textContent=ASSIGNED.size;
+  document.getElementById("supCount").textContent=ALL_SUPPLIERS.filter(isMine).length;
   document.getElementById("filterNote").innerHTML=
     state.filter==="all" ? "" : ` · showing <b>${short(state.filter)}</b> only`;
   document.getElementById("listTitle").textContent=SECTIONS.find(x=>x.id===state.section).label;
@@ -1339,10 +1337,10 @@ function renderBaskets(){
   document.getElementById("sendMail").disabled=!n;
 }
 function renderSupFilter(){
-  if(state.filter!=="all" && !ASSIGNED.has(state.filter)) state.filter="all";
+  if(state.filter!=="all" && !ALL_SUPPLIERS.includes(state.filter)) state.filter="all";
   document.getElementById("supSel").innerHTML=
     `<option value="all"${state.filter==="all"?" selected":""}>All my suppliers</option>`+
-    [...ASSIGNED].sort().map(x=>`<option value="${esc(x)}"${x===state.filter?" selected":""}>${x}</option>`).join("");
+    ALL_SUPPLIERS.slice().sort().map(x=>`<option value="${esc(x)}"${x===state.filter?" selected":""}>${x}${isMine(x)?" ✓":""}</option>`).join("");
 }
 const renderAll=()=>{renderSupFilter();renderNav();renderList();renderBaskets();};
 
@@ -1423,9 +1421,9 @@ document.addEventListener("click",e=>{
   const st=e.target.closest("[data-suptoggle]");
   if(st){
     const n=st.dataset.suptoggle;
-    if(ASSIGNED.has(n)) ASSIGNED.delete(n); else ASSIGNED.add(n);
-    saveMine(); renderAll();
-    document.getElementById("mSub").textContent=`${ASSIGNED.size} selected`;
+    OWNER[n] = isMine(n) ? DEFAULT_OWNER[n] : BUYER;   // claim it, or hand it back to its default owner
+    saveOwners(); renderAll();
+    document.getElementById("mSub").textContent=`${ALL_SUPPLIERS.filter(isMine).length} of ${ALL_SUPPLIERS.length} are yours`;
     document.getElementById("mBody").innerHTML=suppliersEditorHTML();
     return;
   }
@@ -1468,21 +1466,21 @@ document.addEventListener("input",e=>{
   const qi=e.target.closest("[data-qval]");
   if(qi){ const d=state.dest.get(qi.dataset.qval); if(d){ d.qty=+qi.value||0; renderBaskets(); } }
 });
-/* ---------- "my suppliers" editor ---------- */
+/* ---------- "select my suppliers" ---------- */
 function suppliersEditorHTML(){
-  return `<p style="margin:0 0 13px;font-size:12.5px;color:var(--ink-soft)">Tick the suppliers you handle. This only tailors your view and the email — it changes nothing in Buying History.</p>
+  return `<p style="margin:0 0 13px;font-size:12.5px;color:var(--ink-soft)">Tick the suppliers you're contracted with. This marks them as yours — everyone still sees the full supplier list; it only sets who each line belongs to for the email.</p>
     <div class="supGrid">`+
     ALL_SUPPLIERS.slice().sort().map(name=>{
       const on=isMine(name);
       return `<button class="supToggle ${on?"on":""}" data-suptoggle="${esc(name)}">
         <span class="pick ${on?"on":""}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg></span>
         <span class="supToggleName">${name}</span>
-        <span class="supToggleOwner">default · ${OWNER[name]}</span>
+        <span class="supToggleOwner">${on?"yours":OWNER[name]}</span>
       </button>`;}).join("")+`</div>`;
 }
 function openSuppliersEditor(){
-  document.getElementById("mTitle").textContent="My suppliers";
-  document.getElementById("mSub").textContent=`${ASSIGNED.size} selected`;
+  document.getElementById("mTitle").textContent="Select my suppliers";
+  document.getElementById("mSub").textContent=`${ALL_SUPPLIERS.filter(isMine).length} of ${ALL_SUPPLIERS.length} are yours`;
   document.getElementById("mBody").innerHTML=suppliersEditorHTML();
   const cf=document.getElementById("mConfirm"); cf.textContent="Done"; cf.disabled=false; cf.onclick=closeModal;
   modal.classList.add("on"); scrim.classList.add("on");
